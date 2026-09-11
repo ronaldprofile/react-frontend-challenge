@@ -27,19 +27,19 @@ describe('watchlistStore', () => {
     vi.restoreAllMocks()
   })
 
-  it('adiciona filme à lista', () => {
+  it('adds movie to the list', () => {
     useWatchlistStore.getState().addMovie(movie)
     expect(useWatchlistStore.getState().movies).toHaveLength(1)
     expect(useWatchlistStore.getState().isInWatchlist(1)).toBe(true)
   })
 
-  it('não duplica filmes', () => {
+  it('does not duplicate movies', () => {
     useWatchlistStore.getState().addMovie(movie)
     useWatchlistStore.getState().addMovie(movie)
     expect(useWatchlistStore.getState().movies).toHaveLength(1)
   })
 
-  it('remove filme da lista', () => {
+  it('removes movie from the list', () => {
     const { addMovie, removeMovie } = useWatchlistStore.getState()
     addMovie(movie)
     addMovie(otherMovie)
@@ -51,7 +51,7 @@ describe('watchlistStore', () => {
     expect(state.isInWatchlist(2)).toBe(true)
   })
 
-  it('persiste a lista no localStorage', () => {
+  it('persists the list on localStorage', () => {
     useWatchlistStore.getState().addMovie(movie)
 
     const stored = JSON.parse(localStorage.getItem('cinedash.watchlist') ?? '{}')

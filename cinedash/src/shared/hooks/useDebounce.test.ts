@@ -12,12 +12,12 @@ describe('useDebounce', () => {
     vi.useRealTimers()
   })
 
-  it('retorna o valor inicial imediatamente', () => {
+  it('returns the initial value immediately', () => {
     const { result } = renderHook(() => useDebounce('inicial'))
     expect(result.current).toBe('inicial')
   })
 
-  it('atualiza o valor somente após o delay', () => {
+  it('updates the value only after the delay', () => {
     const { result, rerender } = renderHook(({ value }) => useDebounce(value, 400), {
       initialProps: { value: 'a' },
     })
@@ -36,7 +36,7 @@ describe('useDebounce', () => {
     expect(result.current).toBe('abc')
   })
 
-  it('reinicia o timer quando o valor muda rapidamente', () => {
+  it('restarts the timer when the value changes quickly', () => {
     const { result, rerender } = renderHook(({ value }) => useDebounce(value, 400), {
       initialProps: { value: 'a' },
     })

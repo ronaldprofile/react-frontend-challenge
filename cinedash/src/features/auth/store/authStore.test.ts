@@ -7,12 +7,12 @@ describe('authStore', () => {
     localStorage.clear()
   })
 
-  it('inicia deslogado', () => {
+  it('starts logged out', () => {
     expect(useAuthStore.getState().user).toBeNull()
     expect(useAuthStore.getState().token).toBeNull()
   })
 
-  it('login gera usuário e token fictício', () => {
+  it('login generates a fake user and token', () => {
     useAuthStore.getState().login('curador@cine.com')
 
     const state = useAuthStore.getState()
@@ -20,7 +20,7 @@ describe('authStore', () => {
     expect(state.token).toMatch(/^cinedash\./)
   })
 
-  it('logout limpa usuário e token', () => {
+  it('logout clears user and token', () => {
     useAuthStore.getState().login('curador@cine.com')
     useAuthStore.getState().logout()
 
@@ -29,7 +29,7 @@ describe('authStore', () => {
     expect(state.token).toBeNull()
   })
 
-  it('persiste sessão no localStorage', () => {
+  it('persists the session on localStorage', () => {
     useAuthStore.getState().login('curador@cine.com')
 
     const stored = JSON.parse(localStorage.getItem('cinedash.auth') ?? '{}')
