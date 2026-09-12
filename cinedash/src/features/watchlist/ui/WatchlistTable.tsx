@@ -56,6 +56,15 @@ export function WatchlistTable() {
 
   const genreNames = new Map(genres.map((genre) => [genre.id, genre.name]))
 
+  function getGenreLabels(movie: Movie) {
+    return movie.genre_ids.map((id) => genreNames.get(id)).filter(Boolean)
+  }
+
+  function formatDate(date: string | null) {
+    if (!date) return '—'
+    return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(new Date(date))
+  }
+
   const columns: ColumnDef<TableFeatures, Movie>[] = [
     {
       accessorKey: 'title',
@@ -95,17 +104,16 @@ export function WatchlistTable() {
       accessorKey: 'release_date',
       header: 'Data de lançamento',
       enableSorting: false,
-      cell: ({ row }) =>
-        row.original.release_date
-          ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(
-              new Date(row.original.release_date),
-            )
-          : '—',
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm">{formatDate(row.original.release_date)}</span>
+      ),
     },
     {
       accessorKey: 'vote_average',
       header: sortableHeader('Rating'),
-      cell: ({ row }) => row.original.vote_average.toFixed(1),
+      cell: ({ row }) => (
+        <span className="font-medium">{row.original.vote_average.toFixed(1)}</span>
+      ),
     },
     {
       id: 'actions',
@@ -148,33 +156,109 @@ export function WatchlistTable() {
   }
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent">
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
+    <>
+      {/* Desktop: table */}
+      <div className="hidden rounded-lg border md:block">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {/* Sort controls */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-muted-foreground text-xs self-center">Ordenar:</span>
+          {['title', 'genres', 'vote_average'].map((key) => (
+            <Button
+              key={key}
+              variant={
+                sorting.some((s) => s.id === key)
+                  ? 'default'
+                  : 'outline'
+              }
+              size="xs"
+              onClick={() => {
+                setSorting((prev) => {
+                  const existing = prev.find((s) => s.id === key)
+                  if (existing) {
+                    if (existing.desc) return prev.filter((s) => s.id !== key)
+                    return prev.map((s) => (s.id === key ? { ...s, desc: true } : s))
+                  }
+                  return [{ id: key, desc: false }]
+                })
+              }}
+            >
+              {key === 'title' ? 'Título' : key === 'genres' ? 'Gênero' : 'Rating'}
+              <ArrowUpDown className="size-3" />
+            </Button>
           ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        </div>
+
+        {movies.map((movie) => (
+          <div
+            key={movie.id}
+            className="flex items-center gap-3 rounded-lg border p-3"
+          >
+            {movie.poster_path && (
+              <img
+                src={imageUrl(movie.poster_path, 'w92') ?? ''}
+                alt=""
+                className="h-20 w-14 shrink-0 rounded object-cover"
+                loading="lazy"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <Link
+                to="/movie/$id"
+                params={{ id: movie.id }}
+                className="line-clamp-1 font-medium hover:underline"
+              >
+                {movie.title}
+              </Link>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {getGenreLabels(movie).join(', ') || '—'}
+              </p>
+              <div className="mt-1 flex items-center gap-3 text-xs">
+                <span className="text-muted-foreground">{formatDate(movie.release_date)}</span>
+                <span className="font-medium">{movie.vote_average.toFixed(1)}</span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => removeMovie(movie.id)}
+              aria-label={`Remover ${movie.title} da lista`}
+              className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+    </>
   )
 }
