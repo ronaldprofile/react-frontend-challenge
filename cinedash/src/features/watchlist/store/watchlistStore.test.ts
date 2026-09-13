@@ -1,61 +1,57 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useWatchlistStore } from './watchlistStore'
-import type { Movie } from '@/entities/movie/types'
+import { useWatchlistStore } from "./watchlistStore";
+import { FIGHT_CLUB, INCEPTION, INTERSTELLAR } from "@/test/fixtures/movies";
 
-const movie: Movie = {
-  id: 1,
-  title: 'Interestelar',
-  overview: '',
-  poster_path: '/x.jpg',
-  backdrop_path: null,
-  release_date: '2014-11-06',
-  vote_average: 8.5,
-  vote_count: 20000,
-  genre_ids: [878],
-}
-
-const otherMovie: Movie = { ...movie, id: 2, title: 'A Origem' }
-
-describe('watchlistStore', () => {
+describe("watchlistStore", () => {
   beforeEach(() => {
-    localStorage.clear()
-    useWatchlistStore.setState({ movies: [] })
-  })
+    localStorage.clear();
+    useWatchlistStore.setState({ movies: [] });
+  });
 
   afterEach(() => {
-    vi.restoreAllMocks()
-  })
+    vi.restoreAllMocks();
+  });
 
-  it('adds movie to the list', () => {
-    useWatchlistStore.getState().addMovie(movie)
-    expect(useWatchlistStore.getState().movies).toHaveLength(1)
-    expect(useWatchlistStore.getState().isInWatchlist(1)).toBe(true)
-  })
+  describe("addition", () => {
+    it("adds a movie to the list", () => {
+      useWatchlistStore.getState().addMovie(INTERSTELLAR);
+      expect(useWatchlistStore.getState().movies).toHaveLength(1);
+      expect(useWatchlistStore.getState().isInWatchlist(INTERSTELLAR.id)).toBe(
+        true
+      );
+    });
 
-  it('does not duplicate movies', () => {
-    useWatchlistStore.getState().addMovie(movie)
-    useWatchlistStore.getState().addMovie(movie)
-    expect(useWatchlistStore.getState().movies).toHaveLength(1)
-  })
+    it("does not duplicate movies", () => {
+      useWatchlistStore.getState().addMovie(INTERSTELLAR);
+      useWatchlistStore.getState().addMovie(INTERSTELLAR);
+      expect(useWatchlistStore.getState().movies).toHaveLength(1);
+    });
+  });
 
-  it('removes movie from the list', () => {
-    const { addMovie, removeMovie } = useWatchlistStore.getState()
-    addMovie(movie)
-    addMovie(otherMovie)
-    removeMovie(1)
+  describe("removal", () => {
+    it("removes a movie from the list", () => {
+      const { addMovie, removeMovie } = useWatchlistStore.getState();
+      addMovie(INTERSTELLAR);
+      addMovie(INCEPTION);
+      removeMovie(INTERSTELLAR.id);
 
-    const state = useWatchlistStore.getState()
-    expect(state.movies).toHaveLength(1)
-    expect(state.isInWatchlist(1)).toBe(false)
-    expect(state.isInWatchlist(2)).toBe(true)
-  })
+      const state = useWatchlistStore.getState();
+      expect(state.movies).toHaveLength(1);
+      expect(state.isInWatchlist(INTERSTELLAR.id)).toBe(false);
+      expect(state.isInWatchlist(INCEPTION.id)).toBe(true);
+    });
+  });
 
-  it('persists the list on localStorage', () => {
-    useWatchlistStore.getState().addMovie(movie)
+  describe("persistence", () => {
+    it("persists the list in localStorage", () => {
+      useWatchlistStore.getState().addMovie(FIGHT_CLUB);
 
-    const stored = JSON.parse(localStorage.getItem('cinedash.watchlist') ?? '{}')
-    expect(stored.state.movies).toHaveLength(1)
-    expect(stored.state.movies[0].title).toBe('Interestelar')
-  })
-})
+      const stored = JSON.parse(
+        localStorage.getItem("cinedash.watchlist") ?? "{}"
+      );
+      expect(stored.state.movies).toHaveLength(1);
+      expect(stored.state.movies[0].title).toBe("Clube da Luta");
+    });
+  });
+});

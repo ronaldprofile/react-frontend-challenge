@@ -11,6 +11,8 @@ import {
 } from "@testing-library/react";
 import type { ReactNode } from "react";
 
+import { Toaster } from "@/shared/ui/sonner";
+
 const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
     queries: {
@@ -26,7 +28,11 @@ export const queryClient = new QueryClient(queryClientConfig);
 
 function wrapAllProviders({ children }: { children: ReactNode }) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <Toaster />
+
+      {children}
+    </QueryClientProvider>
   );
 }
 
