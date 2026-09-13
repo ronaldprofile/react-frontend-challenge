@@ -48,6 +48,7 @@ export function LoginForm() {
 
       <Form {...form}>
         <form
+          noValidate
           onSubmit={form.handleSubmit(onSubmit)}
           className="w-full max-w-sm space-y-4 rounded-lg border bg-card p-6 shadow-sm"
         >
