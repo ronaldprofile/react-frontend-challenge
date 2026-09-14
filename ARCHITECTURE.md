@@ -5,7 +5,8 @@ Decisões técnicas por trás do **CineDash** — Opção A (Filmes), challenge 
 ## Estrutura de pastas (Feature-Sliced Design)
 
 O código vive em [`cinedash/`](./cinedash) e segue uma adaptação pragmática do
-Feature-Sliced Design, com quatro camadas:
+Feature-Sliced Design, com quatro camadas e uma pasta `test` de infraestrutura
+(fora das camadas):
 
 ```
 src/
@@ -13,7 +14,8 @@ src/
 ├── entities/     # Entidade de domínio reutilizável: Movie (tipos + hooks da API)
 ├── features/     # Funcionalidades autônomas: auth, discover, watchlist, theme
 ├── pages/        # Compõe features em páginas: dashboard, movie, watchlist
-└── shared/       # Código reutilizável: api, ui (shadcn), hooks, lib
+├── shared/       # Código reutilizável: api, ui (shadcn), hooks, lib
+└── test/         # Infra de testes: test-utils, setup, fixtures
 ```
 
 Regras que seguimos:
@@ -25,6 +27,8 @@ Regras que seguimos:
   lógica (stores Zustand) separada da UI.
 - **UI primitives** (shadcn/ui) ficam em `shared/ui` e são componentes puros — nenhuma
   regra de negócio entra ali.
+- **Infra de teste não é camada:** `src/test/` pertence ao runner de testes; somente
+  arquivos de teste importam dela.
 
 ## Autenticação sem backend (simulada)
 
@@ -73,13 +77,42 @@ Esse split segue o princípio de que **store = estado, orquestração = processo
 - **Responsivo:** grid 2→3→5 colunas no dashboard, cards no mobile para a watchlist
   (a tabela completa fica no desktop), menu hamburger (Sheet) abaixo de `md`,
   navegação de links no desktop.
-- **Estados:** skeletons para loading, mensagens com retry para erro, empty states
-  guiando o usuário, toasts (sonner) para ações de add/remove.
+- **Estados:** skeletons para loading, mensagens orientando o usuário em caso de erro,
+  toasts (sonner) para ações de add/remove e empty states guiando o usuário. O único
+  retry hoje é o "Tentar novamente" no ErrorBoundary do root — retry por estado de erro
+  (dashboard, página do filme) é uma melhoria pendente.
 - **Error Boundary** no root (`shared/ui/error-boundary.tsx`) captura erros de
   renderização com fallback amigável.
 - **TanStack Table** na watchlist com ordenação por Título/Gênero/Rating.
 
 ## Testes
 
-Vitest + React Testing Library cobrindo regras de negócio: schema de login,
-stores (auth/watchlist com persist), hook de debounce.
+Vitest + React Testing Library. Pipeline de verificação: `npm test` (vitest), `npm run
+lint` (oxlint) e `tsc -b` (typecheck).
+
+### Composição da suíte (9 arquivos, 40 testes)
+
+- **Unidade / regras de negócio:** schema de login, stores (auth, watchlist, theme) e o
+  hook `useDebounce`.
+- **Integração (componentes e páginas):** `LoginForm`, `DashboardPage`, `WatchlistTable`
+  e `MovieCard` — interagem via `userEvent` e validam **o que o usuário vê**, sem assertar
+  detalhes de implementação. Describes em inglês, no padrão do repo.
+
+### Infraestrutura (`src/test/`)
+
+- **`test-utils.tsx`:** `render`/`renderHook` custom que envolvem o componente num
+  `QueryClientProvider` (com `retry: false`) e montam o `<Toaster />` **real** do sonner.
+  Toasts são validados via DOM (`screen.findByText`), sem mock da lib.
+- **`setup.ts`:** `@testing-library/jest-dom`, `cleanup()` automático após cada teste e
+  polyfills do jsdom necessários ao Radix UI/shadcn (`hasPointerCapture`,
+  `scrollIntoView`).
+- **`fixtures/movies.ts`:** dados fake centralizados (filmes com gêneros, anos e notas
+  variados; gêneros) compartilhados entre as suítes.
+
+### Estratégia: fake API nos testes de página
+
+No `DashboardPage.test.tsx` o mock dos hooks do TMDB **replica o contrato da API**: recebe
+filtros (gênero/ano/nota), query de busca e página como a API real, e devolve a lista de
+fixtures já filtrada e paginada (5 por página). Com isso os testes são comportamentais —
+aplicam o filtro no Select e verificam apenas quais filmes aparecem/desaparecem — sem
+depender de como o hook foi chamado.
